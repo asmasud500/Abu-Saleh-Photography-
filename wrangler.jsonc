@@ -4,11 +4,6 @@
   "main": "src/index.js",
   "compatibility_date": "2026-08-28",
   "vars": {
-    "ALLOWED_ORIGIN": "https://abu-saleh-photography.pages.dev",
-    "CONTACT_TO": "",
-    "CONTACT_FROM": ""
-  },
-  "routes": [
-    { "pattern": "*/api/contact", "zone_name": "example.com" }
-  ]
+    "ALLOWED_ORIGIN": "https://abu-saleh-photography.pages.dev"
+  }
 }
