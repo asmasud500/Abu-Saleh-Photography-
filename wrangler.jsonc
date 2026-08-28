@@ -1,9 +1,5 @@
 {
-  "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "abu-saleh-photography-contact",
-  "main": "src/index.js",
-  "compatibility_date": "2026-08-28",
-  "vars": {
-    "ALLOWED_ORIGIN": "https://abu-saleh-photography.pages.dev"
-  }
+  "main": "contact-handler.js",
+  "compatibility_date": "2026-08-28"
 }
