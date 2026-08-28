@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="Abu Saleh Photography — cinematic portraits, weddings, travel and visual stories." />
   <meta name="theme-color" content="#0b0b0b" />
+  <meta property="og:title" content="Abu Saleh Photography — Visual Stories" />
+  <meta property="og:description" content="Cinematic photography for people, places and moments worth remembering." />
+  <meta property="og:type" content="website" />
   <title>Abu Saleh Photography — Visual Stories</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -28,9 +31,10 @@
         <p class="hero-text">Cinematic photography for people, places and moments worth remembering.</p>
         <a class="button" href="#work">Explore the work <span>↘</span></a>
       </div>
-      <div class="hero-image image-placeholder" role="img" aria-label="Featured photography image">
-        <span>YOUR FEATURED PHOTO</span>
-      </div>
+      <figure class="hero-image photo-card">
+        <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1600&q=85" alt="Portrait photography" fetchpriority="high" />
+        <figcaption>Featured portrait · Unsplash</figcaption>
+      </figure>
     </section>
 
     <section class="intro" id="about">
@@ -40,11 +44,34 @@
 
     <section class="work" id="work">
       <div class="section-heading"><div><p class="eyebrow">02 — Selected work</p><h2>Recent <em>stories</em></h2></div><a href="#contact">Book a shoot ↗</a></div>
+      <div class="filter-bar" role="group" aria-label="Filter gallery">
+        <button class="filter active" data-filter="all">All</button><button class="filter" data-filter="portrait">Portrait</button><button class="filter" data-filter="wedding">Wedding</button><button class="filter" data-filter="travel">Travel</button><button class="filter" data-filter="nature">Nature</button>
+      </div>
       <div class="gallery">
-        <figure class="gallery-item tall image-placeholder"><span>PORTRAIT</span><figcaption>Portraits <small>01</small></figcaption></figure>
-        <figure class="gallery-item image-placeholder"><span>WEDDING</span><figcaption>Wedding <small>02</small></figcaption></figure>
-        <figure class="gallery-item image-placeholder"><span>TRAVEL</span><figcaption>Travel <small>03</small></figcaption></figure>
-        <figure class="gallery-item wide image-placeholder"><span>NATURE</span><figcaption>Nature <small>04</small></figcaption></figure>
+        <figure class="gallery-item tall photo-card" data-category="portrait" data-title="Portraits">
+          <img src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1200&q=82" alt="Editorial portrait" loading="lazy" />
+          <figcaption>Portraits <small>01</small></figcaption>
+        </figure>
+        <figure class="gallery-item photo-card" data-category="wedding" data-title="Wedding">
+          <img src="https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=82" alt="Wedding couple outdoors" loading="lazy" />
+          <figcaption>Wedding <small>02</small></figcaption>
+        </figure>
+        <figure class="gallery-item photo-card" data-category="travel" data-title="Travel">
+          <img src="https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=1200&q=82" alt="Atmospheric travel landscape" loading="lazy" />
+          <figcaption>Travel <small>03</small></figcaption>
+        </figure>
+        <figure class="gallery-item wide photo-card" data-category="nature" data-title="Nature">
+          <img src="https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=1800&q=82" alt="Mountain lake landscape" loading="lazy" />
+          <figcaption>Nature <small>04</small></figcaption>
+        </figure>
+        <figure class="gallery-item photo-card" data-category="portrait" data-title="Character">
+          <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=1200&q=82" alt="Portrait of a man" loading="lazy" />
+          <figcaption>Character <small>05</small></figcaption>
+        </figure>
+        <figure class="gallery-item tall photo-card" data-category="travel" data-title="Journey">
+          <img src="https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=1400&q=82" alt="Misty forest travel scene" loading="lazy" />
+          <figcaption>Journey <small>06</small></figcaption>
+        </figure>
       </div>
     </section>
 
@@ -59,6 +86,12 @@
 
     <section class="contact" id="contact"><p class="eyebrow">04 — Let’s create</p><h2>Have a story<br><em>in mind?</em></h2><a class="email" href="mailto:hello@ab.saleh">hello@ab.saleh <span>↗</span></a><p class="availability">Available for selected projects · Bangladesh & worldwide</p></section>
   </main>
+
+  <div class="lightbox" aria-hidden="true" role="dialog" aria-label="Photo viewer">
+    <button class="lightbox-close" aria-label="Close photo viewer">×</button>
+    <img class="lightbox-image" alt="" />
+    <p class="lightbox-caption"></p>
+  </div>
 
   <footer><span>© <span id="year"></span> Abu Saleh Photography</span><a href="#top">Back to top ↑</a></footer>
   <script src="script.js"></script>
