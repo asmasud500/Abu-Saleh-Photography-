@@ -2,29 +2,41 @@
 
 A premium, cinematic photography portfolio website for Abu Saleh Photography.
 
-## Phase 2
+## Current status
 
-- Replaced placeholder artwork with free online photography assets from Unsplash.
-- Added responsive image gallery with Portrait, Wedding, Travel and Nature categories.
-- Added category filtering.
-- Added accessible lightbox/photo viewer with Escape-to-close support.
-- Added lazy loading for gallery images and high-priority loading for the hero image.
-- Added Open Graph metadata and improved image alt text.
-- Added hover zoom and cinematic image overlays.
+- Responsive cinematic homepage and full gallery
+- Portrait, Wedding, Travel and Nature filtering
+- Accessible lightbox with keyboard navigation
+- Lazy-loaded gallery imagery
+- Contact form with client-side validation and Cloudflare Turnstile integration
+- Cloudflare Worker contact API foundation
+- Security headers and Content Security Policy
+- `robots.txt`, `sitemap.xml`, branded `404.html`, and web manifest
 
-## Image source
+## Architecture
 
-Current demo images are served from `images.unsplash.com` under the Unsplash license. They are temporary demo assets and can be replaced with Abu Saleh's original photographs at any time.
+```text
+Static site (HTML/CSS/JS)
+        |
+        +--> Cloudflare Pages / static hosting
+        |
+        +--> /api/contact --> Cloudflare Worker --> Turnstile --> Resend
+```
 
-## Important
+## Before launch
 
-Before commercial launch, review the license/usage requirements for every external image and replace demo assets with owned/licensed photography where possible.
+1. Replace `YOUR_TURNSTILE_SITE_KEY` with the real Cloudflare Turnstile site key.
+2. Store the Turnstile secret and Resend API key as Cloudflare Worker secrets; never commit them.
+3. Set the production domain and replace the relative canonical URL with the final absolute URL.
+4. Replace demo Unsplash images with owned or properly licensed photography where possible.
+5. Configure the Worker route `/api/contact` on the production domain.
+6. Verify real email delivery and security headers after deployment.
+7. Add real favicon/PWA icon assets before enabling install prompts.
 
-## Next phases
+## Demo image source
 
-1. Replace demo images with optimized original photography
-2. Add full gallery and project detail pages
-3. Add contact form/API
-4. Add advanced image optimization and CDN delivery
-5. Complete SEO, performance and security audit
-6. Deploy to Cloudflare
+Current demo images are served from `images.unsplash.com`. They are temporary demo assets and should be replaced with original/licensed work for a commercial portfolio.
+
+## Security notes
+
+The repository contains no intended API secrets. Contact abuse protection depends on Turnstile, Worker validation and rate limiting being configured in production. The in-memory rate limiter is best-effort per Worker isolate and is not a globally distributed limiter.
