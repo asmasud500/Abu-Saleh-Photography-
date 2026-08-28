@@ -2,21 +2,29 @@
 
 A premium, cinematic photography portfolio website for Abu Saleh Photography.
 
-## Current build
+## Phase 2
 
-- Responsive one-page portfolio foundation
-- Cinematic dark visual direction
-- Hero, About, Selected Work, Services and Contact sections
-- Mobile navigation
-- Semantic HTML and basic SEO metadata
-- Lightweight vanilla HTML/CSS/JavaScript with no build step
+- Replaced placeholder artwork with free online photography assets from Unsplash.
+- Added responsive image gallery with Portrait, Wedding, Travel and Nature categories.
+- Added category filtering.
+- Added accessible lightbox/photo viewer with Escape-to-close support.
+- Added lazy loading for gallery images and high-priority loading for the hero image.
+- Added Open Graph metadata and improved image alt text.
+- Added hover zoom and cinematic image overlays.
+
+## Image source
+
+Current demo images are served from `images.unsplash.com` under the Unsplash license. They are temporary demo assets and can be replaced with Abu Saleh's original photographs at any time.
+
+## Important
+
+Before commercial launch, review the license/usage requirements for every external image and replace demo assets with owned/licensed photography where possible.
 
 ## Next phases
 
-1. Replace image placeholders with optimized photography assets
-2. Add full gallery and category filtering
-3. Add accessible lightbox/photo detail views
-4. Add contact form/API
-5. Add advanced image optimization and CDN delivery
-6. Complete SEO, performance and security audit
-7. Deploy to Cloudflare
+1. Replace demo images with optimized original photography
+2. Add full gallery and project detail pages
+3. Add contact form/API
+4. Add advanced image optimization and CDN delivery
+5. Complete SEO, performance and security audit
+6. Deploy to Cloudflare
