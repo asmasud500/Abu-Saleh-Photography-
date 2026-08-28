@@ -1,7 +1,4 @@
 /*
-  Site-wide security headers. Keep external sources limited to the domains
-  currently used by this static site and Turnstile.
-*/
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: DENY
