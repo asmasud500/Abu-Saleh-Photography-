@@ -14,8 +14,11 @@
   let current = Math.max(0, panels.findIndex(panel => panel.classList.contains('active')));
   let locked = false;
   let touchStartY = 0;
+  let touchStartX = 0;
   let wheelAccumulator = 0;
   let wheelResetTimer = 0;
+
+  const isMobile = () => window.matchMedia('(max-width: 900px)').matches;
 
   const updateControls = page => {
     controls.forEach(control => {
@@ -34,6 +37,7 @@
       const active = index === current;
       panel.classList.toggle('active', active);
       panel.setAttribute('aria-hidden', active ? 'false' : 'true');
+      if (active && isMobile()) panel.scrollTop = 0;
     });
 
     updateControls(page);
@@ -64,12 +68,12 @@
   const initial = window.location.hash.replace('#', '').trim();
   goTo(pages.includes(initial) ? initial : pages[current], { updateHash: false });
 
-  // Desktop mouse-wheel navigation: one wheel gesture moves exactly one panel.
+  // Desktop: one wheel gesture changes exactly one panel.
   window.addEventListener('wheel', event => {
+    if (isMobile()) return;
+
     const target = event.target;
-    if (target instanceof Element && target.closest('input, textarea, select, button')) {
-      return;
-    }
+    if (target instanceof Element && target.closest('input, textarea, select, button')) return;
 
     event.preventDefault();
     wheelAccumulator += event.deltaY;
@@ -82,20 +86,41 @@
     }
   }, { passive: false });
 
-  // Touch/swipe navigation for phones and tablets.
+  // Mobile: allow the active panel to scroll normally. A new panel is opened
+  // only when the user reaches the bottom/top and then swipes past that edge.
   window.addEventListener('touchstart', event => {
-    if (event.touches.length === 1) touchStartY = event.touches[0].clientY;
+    if (!isMobile() || event.touches.length !== 1) return;
+    touchStartY = event.touches[0].clientY;
+    touchStartX = event.touches[0].clientX;
   }, { passive: true });
 
-  window.addEventListener('touchmove', event => {
-    if (event.touches.length === 1) event.preventDefault();
-  }, { passive: false });
-
   window.addEventListener('touchend', event => {
-    if (!touchStartY || !event.changedTouches.length) return;
-    const delta = touchStartY - event.changedTouches[0].clientY;
+    if (!isMobile() || !touchStartY || !event.changedTouches.length) return;
+
+    const touch = event.changedTouches[0];
+    const deltaY = touchStartY - touch.clientY;
+    const deltaX = touchStartX - touch.clientX;
     touchStartY = 0;
-    if (Math.abs(delta) >= 45) move(delta > 0 ? 1 : -1);
+    touchStartX = 0;
+
+    // Ignore taps and horizontal gestures.
+    if (Math.abs(deltaY) < 70 || Math.abs(deltaY) <= Math.abs(deltaX)) return;
+
+    const panel = panels[current];
+    const maxScroll = Math.max(0, panel.scrollHeight - panel.clientHeight);
+    const scrollTop = panel.scrollTop;
+    const tolerance = 8;
+    const atTop = scrollTop <= tolerance;
+    const atBottom = scrollTop >= maxScroll - tolerance;
+
+    // Swipe up => next panel, but only after the current panel is fully read.
+    if (deltaY > 0 && atBottom) {
+      move(1);
+      return;
+    }
+
+    // Swipe down => previous panel, but only when already at the top.
+    if (deltaY < 0 && atTop) move(-1);
   }, { passive: true });
 
   window.addEventListener('keydown', event => {
