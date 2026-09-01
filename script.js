@@ -1,181 +1,31 @@
-(() => {
-  'use strict';
-
-  const panels = Array.from(document.querySelectorAll('.v3-panel[data-panel]'));
-  const controls = Array.from(document.querySelectorAll('[data-page]'));
-  const form = document.getElementById('contactForm');
-  const status = document.getElementById('formStatus');
-  const year = document.getElementById('year');
-
-  if (year) year.textContent = String(new Date().getFullYear());
-  if (!panels.length) return;
-
-  const pages = panels.map(panel => panel.dataset.panel);
-  let current = Math.max(0, panels.findIndex(panel => panel.classList.contains('active')));
-  let locked = false;
-  let touchStartY = 0;
-  let touchStartX = 0;
-  let wheelAccumulator = 0;
-  let wheelResetTimer = 0;
-
-  const isMobile = () => window.matchMedia('(max-width: 900px)').matches;
-
-  const updateControls = page => {
-    controls.forEach(control => {
-      const active = control.dataset.page === page;
-      if (control.matches('button,[role="button"]')) control.classList.toggle('active', active);
-      if (control.classList.contains('v3-dot')) control.setAttribute('aria-current', active ? 'page' : 'false');
-    });
-  };
-
-  const goTo = (page, options = {}) => {
-    const next = pages.indexOf(page);
-    if (next < 0) return;
-
-    current = next;
-    panels.forEach((panel, index) => {
-      const active = index === current;
-      panel.classList.toggle('active', active);
-      panel.setAttribute('aria-hidden', active ? 'false' : 'true');
-      if (active && isMobile()) panel.scrollTop = 0;
-    });
-
-    updateControls(page);
-    document.title = `${page.charAt(0).toUpperCase()}${page.slice(1)} · Abu Saleh`;
-
-    if (options.updateHash !== false && window.location.hash !== `#${page}`) {
-      history.replaceState(null, '', `#${page}`);
-    }
-  };
-
-  const move = direction => {
-    if (locked) return;
-    locked = true;
-    const next = (current + direction + panels.length) % panels.length;
-    goTo(pages[next]);
-    window.setTimeout(() => { locked = false; }, 560);
-  };
-
-  controls.forEach(control => {
-    control.addEventListener('click', event => {
-      const page = control.dataset.page;
-      if (!page) return;
-      event.preventDefault();
-      goTo(page);
-    });
-  });
-
-  const initial = window.location.hash.replace('#', '').trim();
-  goTo(pages.includes(initial) ? initial : pages[current], { updateHash: false });
-
-  // Desktop: one wheel gesture changes exactly one panel.
-  window.addEventListener('wheel', event => {
-    if (isMobile()) return;
-
-    const target = event.target;
-    if (target instanceof Element && target.closest('input, textarea, select, button')) return;
-
-    event.preventDefault();
-    wheelAccumulator += event.deltaY;
-    window.clearTimeout(wheelResetTimer);
-    wheelResetTimer = window.setTimeout(() => { wheelAccumulator = 0; }, 180);
-
-    if (Math.abs(wheelAccumulator) >= 45) {
-      move(wheelAccumulator > 0 ? 1 : -1);
-      wheelAccumulator = 0;
-    }
-  }, { passive: false });
-
-  // Mobile: allow the active panel to scroll normally. A new panel is opened
-  // only when the user reaches the bottom/top and then swipes past that edge.
-  window.addEventListener('touchstart', event => {
-    if (!isMobile() || event.touches.length !== 1) return;
-    touchStartY = event.touches[0].clientY;
-    touchStartX = event.touches[0].clientX;
-  }, { passive: true });
-
-  window.addEventListener('touchend', event => {
-    if (!isMobile() || !touchStartY || !event.changedTouches.length) return;
-
-    const touch = event.changedTouches[0];
-    const deltaY = touchStartY - touch.clientY;
-    const deltaX = touchStartX - touch.clientX;
-    touchStartY = 0;
-    touchStartX = 0;
-
-    // Ignore taps and horizontal gestures.
-    if (Math.abs(deltaY) < 70 || Math.abs(deltaY) <= Math.abs(deltaX)) return;
-
-    const panel = panels[current];
-    const maxScroll = Math.max(0, panel.scrollHeight - panel.clientHeight);
-    const scrollTop = panel.scrollTop;
-    const tolerance = 8;
-    const atTop = scrollTop <= tolerance;
-    const atBottom = scrollTop >= maxScroll - tolerance;
-
-    // Swipe up => next panel, but only after the current panel is fully read.
-    if (deltaY > 0 && atBottom) {
-      move(1);
-      return;
-    }
-
-    // Swipe down => previous panel, but only when already at the top.
-    if (deltaY < 0 && atTop) move(-1);
-  }, { passive: true });
-
-  window.addEventListener('keydown', event => {
-    if (event.target instanceof HTMLElement && /INPUT|TEXTAREA|SELECT/.test(event.target.tagName)) return;
-    if (['ArrowDown', 'ArrowRight', 'PageDown', ' '].includes(event.key)) {
-      event.preventDefault();
-      move(1);
-    } else if (['ArrowUp', 'ArrowLeft', 'PageUp'].includes(event.key)) {
-      event.preventDefault();
-      move(-1);
-    } else if (event.key === 'Home') {
-      event.preventDefault();
-      goTo('home');
-    } else if (event.key === 'End') {
-      event.preventDefault();
-      goTo('contact');
-    }
-  });
-
-  // Contact form remains compatible with the Cloudflare Worker + Turnstile setup.
-  if (form) {
-    form.addEventListener('submit', async event => {
-      event.preventDefault();
-      if (status) status.textContent = 'Sending…';
-
-      const data = new FormData(form);
-      const name = String(data.get('name') || '').trim();
-      const email = String(data.get('email') || '').trim();
-      const message = String(data.get('message') || '').trim();
-      const token = String(data.get('cf-turnstile-response') || '').trim();
-      const emailOk = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email);
-
-      if (name.length < 2 || name.length > 80 || !emailOk || email.length > 254 || message.length < 10 || message.length > 2000) {
-        if (status) status.textContent = 'Please complete all fields correctly.';
-        return;
-      }
-      if (!token) {
-        if (status) status.textContent = 'Please complete the security check.';
-        return;
-      }
-
-      try {
-        const response = await fetch('/api/contact', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify({ name, email, message, turnstileToken: token })
-        });
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(result.error || 'Unable to send inquiry');
-        form.reset();
-        if (window.turnstile) window.turnstile.reset();
-        if (status) status.textContent = 'Thanks — your inquiry has been sent.';
-      } catch (error) {
-        if (status) status.textContent = error instanceof Error ? error.message : 'Something went wrong. Please try again later.';
-      }
-    });
-  }
-})();
+const products=[
+{id:1,name:'Relaxed Linen Shirt',category:'apparel',price:2450,image:'https://images.unsplash.com/photo-1603252109303-2751441dd157?auto=format&fit=crop&w=800&q=82',tag:'Best seller'},
+{id:2,name:'Structured Wool Coat',category:'apparel',price:6850,image:'https://images.unsplash.com/photo-1539533018447-63fcce2678e3?auto=format&fit=crop&w=800&q=82',tag:'New'},
+{id:3,name:'Studio Knit',category:'apparel',price:3200,image:'https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=800&q=82',tag:''},
+{id:4,name:'Everyday Tote',category:'bags',price:2950,image:'https://images.unsplash.com/photo-1594223274512-ad4803739b7c?auto=format&fit=crop&w=800&q=82',tag:'New'},
+{id:5,name:'Leather Crossbody',category:'bags',price:4100,image:'https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=800&q=82',tag:''},
+{id:6,name:'Runner 01',category:'footwear',price:5600,image:'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=800&q=82',tag:'Popular'},
+{id:7,name:'Minimal Sneaker',category:'footwear',price:4900,image:'https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&w=800&q=82',tag:''},
+{id:8,name:'Soft Leather Belt',category:'accessories',price:1750,image:'https://images.unsplash.com/photo-1624222247344-550fb60583dc?auto=format&fit=crop&w=800&q=82',tag:''},
+{id:9,name:'Classic Watch',category:'accessories',price:4450,image:'https://images.unsplash.com/photo-1524805444758-089113d48a6d?auto=format&fit=crop&w=800&q=82',tag:'New'},
+{id:10,name:'Ribbed Cap',category:'accessories',price:1250,image:'https://images.unsplash.com/photo-1521369909029-2afed882baee?auto=format&fit=crop&w=800&q=82',tag:''},
+{id:11,name:'Canvas Overshirt',category:'apparel',price:3650,image:'https://images.unsplash.com/photo-1598032895397-b9472444bf93?auto=format&fit=crop&w=800&q=82',tag:''},
+{id:12,name:'City Backpack',category:'bags',price:5200,image:'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?auto=format&fit=crop&w=800&q=82',tag:'Popular'}
+];
+const money=n=>'৳'+n.toLocaleString('en-BD');
+let state={category:'all',sort:'featured',cart:JSON.parse(localStorage.getItem('nova-cart')||'[]')};
+const $=s=>document.querySelector(s);
+function visible(){let a=products.filter(p=>state.category==='all'||p.category===state.category);if(state.sort==='low')a.sort((x,y)=>x.price-y.price);if(state.sort==='high')a.sort((x,y)=>y.price-x.price);if(state.sort==='name')a.sort((x,y)=>x.name.localeCompare(y.name));return a}
+function renderProducts(){const list=visible();$('#resultCount').textContent=`${list.length} pieces`;$('#productGrid').innerHTML=list.map(p=>`<article class="product-card"><div class="product-image"><img src="${p.image}" alt="${p.name}" loading="lazy">${p.tag?`<span class="tag">${p.tag}</span>`:''}<button class="add-btn" data-add="${p.id}">Add to bag&nbsp;&nbsp; +</button></div><div class="product-info"><h3>${p.name}</h3><div class="product-meta"><span>${p.category}</span><strong>${money(p.price)}</strong></div></div></article>`).join('')}
+function save(){localStorage.setItem('nova-cart',JSON.stringify(state.cart));renderCart()}
+function renderCart(){const count=state.cart.reduce((s,x)=>s+x.qty,0);$('#cartCount').textContent=count;const total=state.cart.reduce((s,x)=>s+x.price*x.qty,0);$('#cartTotal').textContent=money(total);$('#cartItems').innerHTML=state.cart.length?state.cart.map(x=>`<div class="cart-row"><img src="${x.image}" alt="${x.name}"><div><h3>${x.name}</h3><p>${money(x.price)}</p><div class="qty"><button data-dec="${x.id}" aria-label="Decrease quantity">−</button><span>${x.qty}</span><button data-inc="${x.id}" aria-label="Increase quantity">+</button></div></div><button class="remove" data-remove="${x.id}">Remove</button></div>`).join(''):`<div class="empty"><p>Your bag is empty.</p><a href="#shop" class="primary-btn" id="emptyShop">Continue shopping <span>→</span></a></div>`}
+function openCart(){closeSearch();$('#cartDrawer').classList.add('open');$('#overlay').classList.add('show');$('#cartDrawer').setAttribute('aria-hidden','false');document.body.classList.add('lock')}
+function closeCart(){$('#cartDrawer').classList.remove('open');$('#overlay').classList.remove('show');$('#cartDrawer').setAttribute('aria-hidden','true');document.body.classList.remove('lock')}
+function openSearch(){closeCart();$('#searchPanel').classList.add('open');$('#searchPanel').setAttribute('aria-hidden','false');$('#searchInput').focus();document.body.classList.add('lock');search()}
+function closeSearch(){$('#searchPanel').classList.remove('open');$('#searchPanel').setAttribute('aria-hidden','true');document.body.classList.remove('lock')}
+function search(){const q=$('#searchInput').value.trim().toLowerCase();const found=products.filter(p=>p.name.toLowerCase().includes(q)||p.category.includes(q)).slice(0,7);$('#searchResults').innerHTML=q?found.map(p=>`<div class="search-result"><span>${p.name}</span><strong>${money(p.price)}</strong></div>`).join(''):'<p class="muted">Type to search products, categories or essentials.</p>'}
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('show');clearTimeout(window.toastTimer);window.toastTimer=setTimeout(()=>e.classList.remove('show'),1800)}
+document.addEventListener('click',e=>{const add=e.target.closest('[data-add]');if(add){const p=products.find(x=>x.id===+add.dataset.add),item=state.cart.find(x=>x.id===p.id);if(item)item.qty++;else state.cart.push({...p,qty:1});save();toast(`${p.name} added to your bag`);return}const inc=e.target.closest('[data-inc]');if(inc){state.cart.find(x=>x.id===+inc.dataset.inc).qty++;save();return}const dec=e.target.closest('[data-dec]');if(dec){const item=state.cart.find(x=>x.id===+dec.dataset.dec);item.qty--;if(item.qty<=0)state.cart=state.cart.filter(x=>x.id!==item.id);save();return}const rem=e.target.closest('[data-remove]');if(rem){state.cart=state.cart.filter(x=>x.id!==+rem.dataset.remove);save();return}if(e.target.closest('#emptyShop'))closeCart()});
+document.querySelectorAll('.filter').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.filter').forEach(x=>x.classList.remove('active'));b.classList.add('active');state.category=b.dataset.category;renderProducts()}));
+$('#sortSelect').addEventListener('change',e=>{state.sort=e.target.value;renderProducts()});$('#cartBtn').addEventListener('click',openCart);$('#cartClose').addEventListener('click',closeCart);$('#overlay').addEventListener('click',closeCart);$('#searchBtn').addEventListener('click',openSearch);$('#searchClose').addEventListener('click',closeSearch);$('#searchInput').addEventListener('input',search);$('#checkoutBtn').addEventListener('click',()=>{if(!state.cart.length){toast('Your bag is empty');return}toast('Checkout is ready for payment integration')});$('#menuBtn').addEventListener('click',()=>{$('.main-nav').classList.toggle('mobile-open')});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeCart();closeSearch()}});renderProducts();renderCart();
