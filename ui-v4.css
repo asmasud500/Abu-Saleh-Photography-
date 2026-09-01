@@ -1,0 +1,26 @@
+/* UI v4 navigation + mobile fixes */
+.v3-panel{pointer-events:none}
+.v3-panel.active{pointer-events:auto}
+.v3-panel-copy,.v3-profile{min-width:0}
+@media (max-width:900px){
+  .v3-header{height:120px;flex-wrap:wrap;padding:0 16px}
+  .v3-nav{display:flex;position:absolute;left:0;right:0;bottom:0;height:48px;overflow-x:auto;overflow-y:hidden;justify-content:flex-start;gap:24px;padding:0 18px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .v3-nav::-webkit-scrollbar{display:none}
+  .v3-nav button{flex:0 0 auto;padding:16px 0 14px;font-size:11px;white-space:nowrap}
+  .v3-nav button:after{bottom:7px}
+  .v3-cta{margin-left:auto}
+  .v3-main{inset:120px 0 55px}
+  .v3-stage{height:calc(100vh - 175px)}
+}
+@media (max-width:520px){
+  .v3-header{height:112px;padding:0 14px}
+  .v3-nav{height:44px;gap:20px;padding:0 14px}
+  .v3-nav button{padding:14px 0 12px;font-size:10px}
+  .v3-nav button:after{bottom:6px}
+  .v3-main{inset:112px 0 55px}
+  .v3-stage{height:calc(100vh - 167px);width:calc(100vw - 18px)}
+  .v3-panel-copy{padding:24px 18px}
+  .v3-profile{padding:22px 14px}
+  .v3-title{font-size:39px}
+  .v3-copy{font-size:13px;line-height:1.65}
+}
