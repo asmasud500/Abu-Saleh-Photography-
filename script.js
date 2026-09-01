@@ -1,1 +1,156 @@
-const menuButton=document.querySelector('.menu-toggle');const nav=document.querySelector('.nav');if(menuButton&&nav){menuButton.addEventListener('click',()=>{const open=nav.classList.toggle('open');menuButton.setAttribute('aria-expanded',String(open));menuButton.textContent=open?'Close':'Menu'});nav.querySelectorAll('a').forEach(link=>link.addEventListener('click',()=>{nav.classList.remove('open');menuButton.setAttribute('aria-expanded','false');menuButton.textContent='Menu'}))}const year=document.getElementById('year');if(year)year.textContent=new Date().getFullYear();const panels=[...document.querySelectorAll('.v3-panel')];const pageControls=[...document.querySelectorAll('[data-page]')];let current=Math.max(0,panels.findIndex(p=>p.classList.contains('active')));let locked=false;const goTo=page=>{const next=panels.findIndex(p=>p.dataset.panel===page);if(next<0)return;current=next;panels.forEach((panel,i)=>panel.classList.toggle('active',i===current));pageControls.forEach(control=>{if(control.tagName==='BUTTON'||control.classList.contains('v3-dot'))control.classList.toggle('active',control.dataset.page===page)});document.title=`${page.charAt(0).toUpperCase()+page.slice(1)} · Abu Saleh`;if(location.hash!==`#${page}`)history.replaceState(null,'',`#${page}`)};const move=dir=>{if(locked)return;locked=true;const next=(current+dir+panels.length)%panels.length;goTo(panels[next].dataset.panel);window.setTimeout(()=>locked=false,520)};pageControls.forEach(control=>control.addEventListener('click',e=>{const page=control.dataset.page;if(page){e.preventDefault();goTo(page)}}));const initial=location.hash.slice(1);if(panels.some(p=>p.dataset.panel===initial))goTo(initial);let wheelAccum=0;window.addEventListener('wheel',e=>{if(e.target.closest('.v3-panel')?.scrollHeight>e.target.closest('.v3-panel')?.clientHeight){const panel=e.target.closest('.v3-panel');const atTop=panel.scrollTop<=0,atBottom=panel.scrollTop+panel.clientHeight>=panel.scrollHeight-2;if((e.deltaY<0&&atTop)||(e.deltaY>0&&atBottom)){e.preventDefault();wheelAccum+=e.deltaY;if(Math.abs(wheelAccum)>55){move(wheelAccum>0?1:-1);wheelAccum=0}}else return}else{e.preventDefault();wheelAccum+=e.deltaY;if(Math.abs(wheelAccum)>55){move(wheelAccum>0?1:-1);wheelAccum=0}}},{passive:false});let touchY=0;window.addEventListener('touchstart',e=>{touchY=e.changedTouches[0].clientY},{passive:true});window.addEventListener('touchend',e=>{const delta=touchY-e.changedTouches[0].clientY;if(Math.abs(delta)>45)move(delta>0?1:-1)},{passive:true});window.addEventListener('keydown',e=>{if(['ArrowDown','PageDown','ArrowRight'].includes(e.key)){e.preventDefault();move(1)}else if(['ArrowUp','PageUp','ArrowLeft'].includes(e.key)){e.preventDefault();move(-1)}else if(e.key==='Home'){e.preventDefault();goTo('home')}else if(e.key==='End'){e.preventDefault();goTo('contact')}});const form=document.getElementById('contactForm');const status=document.getElementById('formStatus');if(form){form.addEventListener('submit',async e=>{e.preventDefault();if(status)status.textContent='Sending…';const data=new FormData(form);const name=String(data.get('name')||'').trim();const email=String(data.get('email')||'').trim();const message=String(data.get('message')||'').trim();const emailOk=/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email);if(name.length<2||name.length>80||!emailOk||email.length>254||message.length<10||message.length>2000){if(status)status.textContent='Please complete all fields correctly.';return}const token=String(data.get('cf-turnstile-response')||'').trim();if(!token){if(status)status.textContent='Please complete the security check.';return}try{const response=await fetch('/api/contact',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({name,email,message,turnstileToken:token})});const result=await response.json().catch(()=>({}));if(!response.ok)throw new Error(result.error||'Unable to send inquiry');form.reset();if(window.turnstile)window.turnstile.reset();if(status)status.textContent='Thanks — your inquiry has been sent.'}catch(error){if(status)status.textContent=error.message||'Something went wrong. Please try again later.'}})}
+(() => {
+  'use strict';
+
+  const panels = Array.from(document.querySelectorAll('.v3-panel[data-panel]'));
+  const controls = Array.from(document.querySelectorAll('[data-page]'));
+  const form = document.getElementById('contactForm');
+  const status = document.getElementById('formStatus');
+  const year = document.getElementById('year');
+
+  if (year) year.textContent = String(new Date().getFullYear());
+  if (!panels.length) return;
+
+  const pages = panels.map(panel => panel.dataset.panel);
+  let current = Math.max(0, panels.findIndex(panel => panel.classList.contains('active')));
+  let locked = false;
+  let touchStartY = 0;
+  let wheelAccumulator = 0;
+  let wheelResetTimer = 0;
+
+  const updateControls = page => {
+    controls.forEach(control => {
+      const active = control.dataset.page === page;
+      if (control.matches('button,[role="button"]')) control.classList.toggle('active', active);
+      if (control.classList.contains('v3-dot')) control.setAttribute('aria-current', active ? 'page' : 'false');
+    });
+  };
+
+  const goTo = (page, options = {}) => {
+    const next = pages.indexOf(page);
+    if (next < 0) return;
+
+    current = next;
+    panels.forEach((panel, index) => {
+      const active = index === current;
+      panel.classList.toggle('active', active);
+      panel.setAttribute('aria-hidden', active ? 'false' : 'true');
+    });
+
+    updateControls(page);
+    document.title = `${page.charAt(0).toUpperCase()}${page.slice(1)} · Abu Saleh`;
+
+    if (options.updateHash !== false && window.location.hash !== `#${page}`) {
+      history.replaceState(null, '', `#${page}`);
+    }
+  };
+
+  const move = direction => {
+    if (locked) return;
+    locked = true;
+    const next = (current + direction + panels.length) % panels.length;
+    goTo(pages[next]);
+    window.setTimeout(() => { locked = false; }, 560);
+  };
+
+  controls.forEach(control => {
+    control.addEventListener('click', event => {
+      const page = control.dataset.page;
+      if (!page) return;
+      event.preventDefault();
+      goTo(page);
+    });
+  });
+
+  const initial = window.location.hash.replace('#', '').trim();
+  goTo(pages.includes(initial) ? initial : pages[current], { updateHash: false });
+
+  // Desktop mouse-wheel navigation: one wheel gesture moves exactly one panel.
+  window.addEventListener('wheel', event => {
+    const target = event.target;
+    if (target instanceof Element && target.closest('input, textarea, select, button')) {
+      return;
+    }
+
+    event.preventDefault();
+    wheelAccumulator += event.deltaY;
+    window.clearTimeout(wheelResetTimer);
+    wheelResetTimer = window.setTimeout(() => { wheelAccumulator = 0; }, 180);
+
+    if (Math.abs(wheelAccumulator) >= 45) {
+      move(wheelAccumulator > 0 ? 1 : -1);
+      wheelAccumulator = 0;
+    }
+  }, { passive: false });
+
+  // Touch/swipe navigation for phones and tablets.
+  window.addEventListener('touchstart', event => {
+    if (event.touches.length === 1) touchStartY = event.touches[0].clientY;
+  }, { passive: true });
+
+  window.addEventListener('touchmove', event => {
+    if (event.touches.length === 1) event.preventDefault();
+  }, { passive: false });
+
+  window.addEventListener('touchend', event => {
+    if (!touchStartY || !event.changedTouches.length) return;
+    const delta = touchStartY - event.changedTouches[0].clientY;
+    touchStartY = 0;
+    if (Math.abs(delta) >= 45) move(delta > 0 ? 1 : -1);
+  }, { passive: true });
+
+  window.addEventListener('keydown', event => {
+    if (event.target instanceof HTMLElement && /INPUT|TEXTAREA|SELECT/.test(event.target.tagName)) return;
+    if (['ArrowDown', 'ArrowRight', 'PageDown', ' '].includes(event.key)) {
+      event.preventDefault();
+      move(1);
+    } else if (['ArrowUp', 'ArrowLeft', 'PageUp'].includes(event.key)) {
+      event.preventDefault();
+      move(-1);
+    } else if (event.key === 'Home') {
+      event.preventDefault();
+      goTo('home');
+    } else if (event.key === 'End') {
+      event.preventDefault();
+      goTo('contact');
+    }
+  });
+
+  // Contact form remains compatible with the Cloudflare Worker + Turnstile setup.
+  if (form) {
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      if (status) status.textContent = 'Sending…';
+
+      const data = new FormData(form);
+      const name = String(data.get('name') || '').trim();
+      const email = String(data.get('email') || '').trim();
+      const message = String(data.get('message') || '').trim();
+      const token = String(data.get('cf-turnstile-response') || '').trim();
+      const emailOk = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email);
+
+      if (name.length < 2 || name.length > 80 || !emailOk || email.length > 254 || message.length < 10 || message.length > 2000) {
+        if (status) status.textContent = 'Please complete all fields correctly.';
+        return;
+      }
+      if (!token) {
+        if (status) status.textContent = 'Please complete the security check.';
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/contact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({ name, email, message, turnstileToken: token })
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || 'Unable to send inquiry');
+        form.reset();
+        if (window.turnstile) window.turnstile.reset();
+        if (status) status.textContent = 'Thanks — your inquiry has been sent.';
+      } catch (error) {
+        if (status) status.textContent = error instanceof Error ? error.message : 'Something went wrong. Please try again later.';
+      }
+    });
+  }
+})();
