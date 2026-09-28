@@ -32,3 +32,33 @@ Replace the demo product data and image URLs in `script.js` with real inventory 
 - `index.html` — storefront structure
 - `styles.css` — responsive visual system
 - `script.js` — catalog, filters, search and cart logic
+
+
+## Telegram ecommerce bot
+
+The Cloudflare Worker now supports an admin Telegram workflow:
+
+- Open Store and Support buttons from /start
+- Check Order Status button and /status ORDER-ID
+- New-order notification with inline Confirm, Processing, Shipped, Delivered, and Cancel buttons
+- Status changes update the Telegram order message
+- If D1 is connected, status buttons also update the order in the database
+- /orders shows the latest 10 orders to the configured admin chat
+- Optional Admin Dashboard button
+
+### Cloudflare Worker configuration
+
+Required secrets:
+- TELEGRAM_BOT_TOKEN
+- TELEGRAM_CHAT_ID
+
+Optional variables:
+- STORE_URL
+- ADMIN_URL
+- SUPPORT_URL
+- ALLOWED_ORIGIN
+
+Set the Telegram webhook to:
+https://YOUR-WORKER-DOMAIN/telegram/webhook
+
+The Telegram bot token must stay in Cloudflare Secrets and must never be committed to GitHub.
