@@ -83,7 +83,12 @@ async function handleCallback(env,q){
   const data=String(q.data||"");
   const m=data.match(/^order:([A-Z0-9-]+):(CONFIRMED|PROCESSING|SHIPPED|DELIVERED|CANCELLED)$/);
   if(!m){
-    await tg(env,"answerCallbackQuery",{callback_query_id:q.id,text:"Unknown action",show_alert:false});
+    if(data==="status_help"){
+      await tg(env,"answerCallbackQuery",{callback_query_id:q.id,text:"Send /status ORDER-ID",show_alert:false});
+      await tg(env,"sendMessage",{chat_id:q.message?.chat?.id,text:"📦 Check an order with: <code>/status ORDER-ID</code>",parse_mode:"HTML"});
+    }else{
+      await tg(env,"answerCallbackQuery",{callback_query_id:q.id,text:"Unknown action",show_alert:false});
+    }
     return;
   }
   const [,id,status]=m;
