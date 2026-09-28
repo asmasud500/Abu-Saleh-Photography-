@@ -135,7 +135,7 @@ async function handleBotMessage(env,msg){
     return;
   }
 
-  const idMatch=text.match(/^\\/?status\\s+([A-Z0-9-]{6,40})$/i);
+  const idMatch=text.match(/^\/?status\s+([A-Z0-9-]{6,40})$/i);
   if(idMatch){
     const id=idMatch[1].toUpperCase();
     if(!env.DB){
